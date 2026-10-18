@@ -5,11 +5,6 @@ pipeline {
         choice(name: 'ENVIRONMENT', choices: ['QA', 'Staging', 'Production'], description: 'Target deployment environment')
     }
 
-    tools {
-        jdk 'JDK-25'
-        maven 'Maven'
-    }
-
     stages {
         stage('Checkout Code') {
             steps {
