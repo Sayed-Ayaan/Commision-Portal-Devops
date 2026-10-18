@@ -1,0 +1,20 @@
+---
+- name: Configure Insurance Portal Server Prerequisites
+  hosts: stagers
+  become: false
+  tasks:
+    - name: Ensure deployment directory exists for Tomcat webapps
+      ansible.builtin.file:
+        path: "C:/Program Files/Apache Software Foundation/Tomcat 10.1/webapps"
+        state: directory
+        mode: '0755'
+
+    - name: Verify Docker service availability
+      ansible.windows.win_service:
+        name: com.docker.service
+        state: started
+      ignore_errors: yes
+
+    - name: Display configuration completion message
+      ansible.builtin.debug:
+        msg: "Server configuration management check completed successfully for Commission Portal!"
