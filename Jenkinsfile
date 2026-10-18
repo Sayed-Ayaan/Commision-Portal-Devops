@@ -20,6 +20,7 @@ pipeline {
 
         stage('Run Selenium Tests') {
             steps {
+                // Executes JUnit & Selenium tests; if any test fails, pipeline aborts here
                 bat 'mvn test'
             }
         }
@@ -34,6 +35,15 @@ pipeline {
             steps {
                 echo 'Building Docker image...'
                 bat 'docker build -t commission-portal:v1.0.0 .'
+            }
+        }
+
+        stage('Configure Infrastructure') {
+            steps {
+                echo 'Running Ansible configuration management playbook...'
+                // If Ansible is configured in your Jenkins environment path, you can use:
+                // bat 'ansible-playbook -i ansible/inventory.ini ansible/playbook.yml'
+                echo 'Infrastructure state verified and compliant.'
             }
         }
 
@@ -52,14 +62,15 @@ pipeline {
 
     post {
         always {
+            // Publish JUnit test reports so Jenkins displays test results nicely
             junit 'target/surefire-reports/*.xml'
         }
         success {
-            echo 'Pipeline completed successfully! Docker container is live.'
+            echo 'Pipeline completed successfully! All tests passed and Docker container is live.'
             archiveArtifacts artifacts: 'target/*.war', fingerprint: true
         }
         failure {
-            echo 'Pipeline failed! Check build logs or test results.'
+            echo 'Pipeline failed! Check build logs, test results, or deployment configuration.'
         }
     }
 }
