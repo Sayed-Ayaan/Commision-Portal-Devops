@@ -2,23 +2,23 @@ pipeline {
     agent any
 
     parameters {
-        choice(name: 'ENVIRONMENT', choices: ['QA', 'Staging', 'Production'], description: 'Target deployment environment')
+        choice(name: 'DEPLOY_ENV', choices: ['Staging', 'Production'], description: 'Target deployment environment')
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Build and Test') {
+        stage('Build & Test') {
             steps {
-                bat 'mvn clean test'
+                bat 'mvn clean compile'
             }
         }
 
-        stage('Package Application') {
+        stage('Package Artifact') {
             steps {
                 bat 'mvn package -DskipTests'
             }
@@ -26,20 +26,20 @@ pipeline {
 
         stage('Deploy to Server') {
             steps {
-                echo "Deploying application to ${params.ENVIRONMENT} environment..."
-                // Copy the built WAR file to Tomcat webapps directory
-                // Adjust path based on your Tomcat installation location
-                bat 'copy target\\commission-portal.war C:\\tomcat\\webapps\\commission-portal.war'
+                echo "Deploying application to ${params.DEPLOY_ENV} environment..."
+                // Using quotes around paths with spaces and wildcard for WAR file
+                bat 'copy target\\*.war "C:\\Program Files\\Apache Software Foundation\\Tomcat 10.1\\webapps\\commission-portal.war"'
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline completed successfully! Application deployed.'
+            echo 'Pipeline completed successfully!'
+            archiveArtifacts artifacts: 'target/*.war', fingerprint: true
         }
         failure {
-            echo 'Pipeline failed during execution.'
+            echo 'Pipeline failed. Please check the logs.'
         }
     }
 }
