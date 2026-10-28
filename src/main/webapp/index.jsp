@@ -56,7 +56,32 @@
         }
         .light .glass-panel {
             background: rgba(255, 255, 255, 0.85);
-            border: 1px solid rgba(0, 0, 0, 0.08);
+            border: 1px solid #dbe3ee;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+        }
+        body.light {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+        }
+        .light [class~="bg-slate-950"] { background-color: #f8fafc !important; }
+        .light [class~="bg-slate-900"], .light [class~="bg-slate-900/80"], .light [class~="bg-slate-900/90"],
+        .light [class~="bg-slate-800"], .light [class~="bg-slate-800/50"], .light [class~="bg-slate-800/40"] {
+            background-color: #f8fafc !important;
+        }
+        .light [class~="bg-gradient-to-br"] { background-image: none !important; background-color: #fff !important; }
+        .light [class~="text-white"], .light [class~="text-slate-100"], .light [class~="text-slate-200"] { color: #0f172a !important; }
+        .light [class~="text-slate-300"], .light [class~="text-slate-400"] { color: #475569 !important; }
+        .light [class~="text-slate-500"] { color: #64748b !important; }
+        .light [class~="border-slate-800"], .light [class~="border-slate-800/80"], .light [class~="border-slate-700"] { border-color: #cbd5e1 !important; }
+        .light [class~="divide-slate-800/60"] > :not([hidden]) ~ :not([hidden]) { border-color: #e2e8f0 !important; }
+        .light input, .light select, .light textarea { color: #0f172a !important; background-color: #fff !important; border-color: #cbd5e1 !important; }
+        .light input::placeholder { color: #94a3b8 !important; }
+        .light table thead { background-color: #e2e8f0 !important; }
+        .light footer { background-color: #f8fafc !important; border-color: #cbd5e1 !important; }
+        .light .hover\:bg-slate-800\/80:hover, .light .hover\:bg-slate-800\/40:hover, .light .hover\:bg-slate-700:hover { background-color: #e2e8f0 !important; }
+        .light .hover\:text-white:hover { color: #0f172a !important; }
+        .light ::-webkit-scrollbar-track { background: #e2e8f0; }
+        .light ::-webkit-scrollbar-thumb { background: #94a3b8; }
         }
     </style>
 </head>
@@ -96,7 +121,7 @@
                         </div>
 
                         <!-- Dark/Light Theme Toggle -->
-                        <button onclick="toggleTheme()" class="p-2 text-slate-400 hover:text-amber-400 hover:bg-slate-800/80 rounded-lg transition-all" title="Toggle Theme">
+                        <button id="themeToggle" onclick="toggleTheme()" aria-label="Toggle light or dark theme" aria-pressed="false" class="p-2 text-slate-400 hover:text-amber-400 hover:bg-slate-800/80 rounded-lg transition-all" title="Toggle Theme">
                             <i class="fa-solid fa-moon text-lg" id="themeIcon"></i>
                         </button>
                     </div>
@@ -160,7 +185,7 @@
                             <div class="text-2xl font-black text-white font-mono" id="kpiActivePolicies">142</div>
                             <div class="mt-1 flex items-center gap-1.5 text-xs text-blue-400">
                                 <i class="fa-solid fa-plus"></i>
-                                <span>12 new this week</span>
+                                <span id="kpiNewThisWeek">0 new this week</span>
                             </div>
                         </div>
                     </div>
@@ -176,8 +201,8 @@
                         <div class="mt-3">
                             <div class="text-2xl font-black text-white font-mono" id="kpiPendingCount">8</div>
                             <div class="mt-1 flex items-center gap-1.5 text-xs text-amber-400">
-                                <i class="fa-solid fa-spinner animate-spin text-[10px]"></i>
-                                <span>Processing via Queue</span>
+                                <i class="fa-solid fa-list-check text-[10px]"></i>
+                                <span>Submitted or under review</span>
                             </div>
                         </div>
                     </div>
@@ -245,11 +270,11 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-300 mb-1">Client Full Name *</label>
-                                <input type="text" id="calcClient" required placeholder="e.g. Aditi Sharma" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors">
+                                <input type="text" id="calcClient" required minlength="2" maxlength="80" autocomplete="name" oninput="validatePolicyholder(this)" placeholder="e.g. Aditi Sharma" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-slate-300 mb-1">Insurance Type *</label>
-                                <select id="calcType" onchange="calculatePayout()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors">
+                                <select id="calcType" onchange="calculatePayout()" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors">
                                     <option value="Motor">Motor (10%)</option>
                                     <option value="Health">Health (12.5%)</option>
                                     <option value="Life" selected>Life (15%)</option>
@@ -263,11 +288,12 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-300 mb-1">Annual Premium (&#8377;) *</label>
-                                <input type="number" id="calcPremium" value="45000" min="100" step="100" oninput="calculatePayout()" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors font-mono">
+                                <input type="number" id="calcPremium" value="45000" min="100" max="100000000" step="any" oninput="validatePremium(this); calculatePayout()" required aria-describedby="premiumHelp" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors font-mono">
+                                <p id="premiumHelp" class="text-[11px] text-slate-500 mt-1">Enter an amount from ₹100 to ₹10 crore.</p>
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-slate-300 mb-1">Term Length</label>
-                                <select id="calcTerm" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors">
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Term Length *</label>
+                                <select id="calcTerm" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors">
                                     <option value="1 Year">1 Year</option>
                                     <option value="3 Years">3 Years</option>
                                     <option value="5 Years" selected>5 Years</option>
@@ -275,8 +301,8 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-slate-300 mb-1">Agent Tier Modifier</label>
-                                <select id="calcTier" onchange="calculatePayout()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors">
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Agent Tier Modifier *</label>
+                                <select id="calcTier" onchange="calculatePayout()" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors">
                                     <option value="1.0">Standard Tier (1.0x)</option>
                                     <option value="1.15" selected>Senior Tier (1.15x)</option>
                                     <option value="1.3">Premier Tier (1.3x)</option>
@@ -285,9 +311,13 @@
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div><label class="block text-xs font-semibold text-slate-300 mb-1">Renewal / Expiry Date</label><input type="date" id="calcExpiry" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"></div>
-                            <div><label class="block text-xs font-semibold text-slate-300 mb-1">Policy State / UT</label><select id="calcState" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"><option value="">Select state</option><option>Maharashtra</option><option>Karnataka</option><option>Delhi</option><option>Tamil Nadu</option><option>Telangana</option><option>Gujarat</option><option>Uttar Pradesh</option><option>West Bengal</option><option>Other</option></select></div>
-                            <div><label class="block text-xs font-semibold text-slate-300 mb-1">Preferred payout rail</label><select id="calcPayoutMode" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"><option>NEFT / bank transfer</option><option>UPI (insurer-supported)</option></select></div>
+                            <div><label class="block text-xs font-semibold text-slate-300 mb-1">Renewal / Expiry Date *</label><input type="date" id="calcExpiry" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"></div>
+                            <div><label class="block text-xs font-semibold text-slate-300 mb-1">Policy State / UT *</label><select id="calcState" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white">
+                                <option value="">Select state / UT</option>
+                                <option>Andhra Pradesh</option><option>Arunachal Pradesh</option><option>Assam</option><option>Bihar</option><option>Chhattisgarh</option><option>Goa</option><option>Gujarat</option><option>Haryana</option><option>Himachal Pradesh</option><option>Jharkhand</option><option>Karnataka</option><option>Kerala</option><option>Madhya Pradesh</option><option>Maharashtra</option><option>Manipur</option><option>Meghalaya</option><option>Mizoram</option><option>Nagaland</option><option>Odisha</option><option>Punjab</option><option>Rajasthan</option><option>Sikkim</option><option>Tamil Nadu</option><option>Telangana</option><option>Tripura</option><option>Uttar Pradesh</option><option>Uttarakhand</option><option>West Bengal</option>
+                                <option>Andaman and Nicobar Islands</option><option>Chandigarh</option><option>Dadra and Nagar Haveli and Daman and Diu</option><option>Delhi</option><option>Jammu and Kashmir</option><option>Ladakh</option><option>Lakshadweep</option><option>Puducherry</option>
+                            </select></div>
+                            <div><label class="block text-xs font-semibold text-slate-300 mb-1">Preferred payout rail *</label><select id="calcPayoutMode" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white"><option value="">Select payout method</option><option>NEFT / bank transfer</option><option>UPI (insurer-supported)</option></select></div>
                         </div>
 
                         <div class="pt-2">
@@ -509,6 +539,7 @@
         };
         function dateAfter(days) { const date = new Date(); date.setDate(date.getDate() + days); return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-'); }
         function dateMonthsAgo(months) { const date = new Date(); date.setDate(1); date.setMonth(date.getMonth() - months); return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate())].join('-'); }
+        function todayLocalISO() { const date = new Date(); return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate())].join('-'); }
         function formatINR(amount) { return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0); }
         function getCommissionProjection(premium, type, tierMultiplier) {
             const baseRate = commissionRates[type] || 0;
@@ -546,7 +577,7 @@
             return {
                 ...policy,
                 status,
-                createdAt: policy.createdAt || dateMonthsAgo(0),
+                createdAt: policy.createdAt || todayLocalISO(),
                 history: Array.isArray(policy.history) && policy.history.length
                     ? policy.history
                     : [{ status, note: 'Status recorded when lifecycle tracking was enabled', timestamp: new Date().toISOString() }]
@@ -563,6 +594,7 @@
 
         // Initialize Application
         window.addEventListener('DOMContentLoaded', () => {
+            setTheme(localStorage.getItem('apexShieldTheme') === 'light', false);
             renderTable();
             initCharts();
             calculatePayout();
@@ -600,7 +632,8 @@
 
         // Calculate Payout Live
         function calculatePayout() {
-            const premium = parseFloat(document.getElementById('calcPremium').value) || 0;
+            const premiumInput = document.getElementById('calcPremium');
+            const premium = parseFloat(premiumInput.value) || 0;
             const type = document.getElementById('calcType').value;
             const tierMultiplier = parseFloat(document.getElementById('calcTier').value) || 1.0;
 
@@ -609,13 +642,34 @@
             // Update DOM
             document.getElementById('outBaseRate').innerText = projection.baseRate.toFixed(1) + '%';
             document.getElementById('outEffRate').innerText = projection.effectiveRate.toFixed(2) + '%';
-            document.getElementById('outGross').innerText = formatINR(projection.payout);
+            document.getElementById('outGross').innerText = premiumInput.value && premiumInput.validity.valid ? formatINR(projection.payout) : '—';
+        }
+
+        function validatePolicyholder(input) {
+            const value = input.value.trim();
+            const validName = value.length >= 2 && value.length <= 80 && !/[\d<>]/.test(value);
+            input.setCustomValidity(validName || input.value === '' ? '' : 'Enter a name between 2 and 80 characters without digits.');
+            return validName;
+        }
+
+        function validatePremium(input) {
+            let message = '';
+            if (input.validity.badInput || (input.value && !Number.isFinite(Number(input.value)))) message = 'Enter a valid premium amount.';
+            else if (input.value && Number(input.value) < 100) message = 'Premium must be at least ₹100.';
+            else if (input.value && Number(input.value) > 100000000) message = 'Premium cannot exceed ₹10 crore.';
+            input.setCustomValidity(message);
+            return !message && input.value !== '';
         }
 
         // Handle Policy Form Submit
         function handlePolicySubmit(e) {
             e.preventDefault();
-            const client = document.getElementById('calcClient').value.trim();
+            const clientInput = document.getElementById('calcClient');
+            const premiumInput = document.getElementById('calcPremium');
+            validatePolicyholder(clientInput);
+            validatePremium(premiumInput);
+            if (!e.currentTarget.reportValidity()) return;
+            const client = clientInput.value.trim();
             const type = document.getElementById('calcType').value;
             const premium = parseFloat(document.getElementById('calcPremium').value) || 0;
             const tierMultiplier = parseFloat(document.getElementById('calcTier').value) || 1.0;
@@ -633,7 +687,7 @@
                 expiry: document.getElementById('calcExpiry').value || '',
                 state: document.getElementById('calcState').value,
                 payoutMode: document.getElementById('calcPayoutMode').value,
-                createdAt: dateMonthsAgo(0),
+                createdAt: todayLocalISO(),
                 status: 'Submitted',
                 history: [{ status: 'Submitted', note: 'Policy added to register', timestamp: new Date().toISOString() }]
             };
@@ -648,6 +702,7 @@
             document.getElementById('calcClient').value = '';
             document.getElementById('calcExpiry').value = '';
             document.getElementById('calcState').value = '';
+            document.getElementById('calcPayoutMode').value = '';
             showToast(`Policy ${newId} submitted and queued for processing!`, 'success');
         }
 
@@ -783,6 +838,14 @@
         function updateKPIs() {
             const total = policyRegistry.reduce((acc, curr) => acc + curr.payout, 0);
             const pendingCount = policyRegistry.filter(p => p.status === 'Submitted' || p.status === 'Under Review').length;
+            const weekStart = new Date();
+            weekStart.setHours(0, 0, 0, 0);
+            weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+            const newThisWeek = policyRegistry.filter(policy => {
+                if (!policy.createdAt) return false;
+                const created = new Date(policy.createdAt + 'T00:00:00');
+                return !Number.isNaN(created.getTime()) && created >= weekStart && created <= new Date();
+            }).length;
             const today = new Date(new Date().toDateString());
             const renewalsDue = policyRegistry.filter(p => {
                 if (!p.expiry) return false;
@@ -793,6 +856,7 @@
             document.getElementById('kpiTotalEarnings').innerText = formatINR(total);
             document.getElementById('kpiActivePolicies').innerText = policyRegistry.length;
             document.getElementById('kpiPendingCount').innerText = pendingCount;
+            document.getElementById('kpiNewThisWeek').innerText = `${newThisWeek} new this week`;
             document.getElementById('kpiRenewals').innerText = renewalsDue;
         }
 
@@ -874,16 +938,16 @@
         // Toggle Dark/Light Theme Mode
         function toggleTheme() {
             const body = document.getElementById('bodyRoot');
+            setTheme(!body.classList.contains('light'), true);
+        }
+
+        function setTheme(isLight, savePreference) {
+            const body = document.getElementById('bodyRoot');
             const icon = document.getElementById('themeIcon');
-            if (body.classList.contains('light')) {
-                body.classList.remove('light');
-                body.classList.add('bg-slate-950', 'text-slate-100');
-                icon.className = 'fa-solid fa-moon text-lg';
-            } else {
-                body.classList.add('light');
-                body.classList.remove('bg-slate-950');
-                icon.className = 'fa-solid fa-sun text-lg';
-            }
+            body.classList.toggle('light', isLight);
+            icon.className = isLight ? 'fa-solid fa-sun text-lg' : 'fa-solid fa-moon text-lg';
+            document.getElementById('themeToggle').setAttribute('aria-pressed', String(isLight));
+            if (savePreference) localStorage.setItem('apexShieldTheme', isLight ? 'light' : 'dark');
         }
 
         // Initialize Chart.js Data
