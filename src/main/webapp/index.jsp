@@ -112,10 +112,10 @@
                     <div class="flex items-center gap-4">
                         <div class="hidden sm:flex items-center gap-3 border-r border-slate-800 pr-4">
                             <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-inner">
-                                BN
+                                AS
                             </div>
                             <div class="text-left">
-                                <div class="text-sm font-semibold text-slate-200">Basil Narvel</div>
+                                <div class="text-sm font-semibold text-slate-200">Ayaan Sayed</div>
                         <div class="text-xs text-slate-400 font-mono">Advisor ID: AGT-99042</div>
                             </div>
                         </div>
@@ -411,9 +411,9 @@
                 <div class="p-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
                     <div id="tablePaginationInfo">Showing 1 to 5 of 5 entries</div>
                     <div class="flex gap-1">
-                        <button class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 disabled:opacity-50" disabled>Previous</button>
-                        <button class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded font-bold">1</button>
-                        <button class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 disabled:opacity-50" disabled>Next</button>
+                        <button id="previousPageButton" type="button" onclick="changePage(-1)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 disabled:opacity-50">Previous</button>
+                        <span id="currentPageIndicator" class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded font-bold">1 / 1</span>
+                        <button id="nextPageButton" type="button" onclick="changePage(1)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 disabled:opacity-50">Next</button>
                     </div>
                 </div>
             </section>
@@ -587,6 +587,8 @@
 
         let filteredPolicies = [...policyRegistry];
         let activeTab = 'dashboard';
+        let currentPage = 1;
+        const pageSize = 5;
 
         // Chart instances
         let trendChartInstance = null;
@@ -713,11 +715,12 @@
 
             if (filteredPolicies.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-500">No matching policies found.</td></tr>`;
-                document.getElementById('tablePaginationInfo').innerText = 'Showing 0 entries';
+                updatePaginationControls(0, 0);
                 return;
             }
 
-            filteredPolicies.forEach(pol => {
+            const pageStart = (currentPage - 1) * pageSize;
+            filteredPolicies.slice(pageStart, pageStart + pageSize).forEach(pol => {
                 let badgeClass = 'bg-slate-800 text-slate-300 border-slate-700';
                 if (pol.status === 'Approved') badgeClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
                 if (pol.status === 'Submitted' || pol.status === 'Under Review' || pol.status === 'Payout Due') badgeClass = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
@@ -746,7 +749,25 @@
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('tablePaginationInfo').innerText = `Showing 1 to ${filteredPolicies.length} of ${filteredPolicies.length} entries`;
+            updatePaginationControls(pageStart + 1, Math.min(pageStart + pageSize, filteredPolicies.length));
+        }
+
+        function updatePaginationControls(start, end) {
+            const total = filteredPolicies.length;
+            const totalPages = Math.max(1, Math.ceil(total / pageSize));
+            currentPage = Math.min(Math.max(currentPage, 1), totalPages);
+            document.getElementById('tablePaginationInfo').innerText = total ? `Showing ${start} to ${end} of ${total} entries` : 'Showing 0 entries';
+            document.getElementById('currentPageIndicator').innerText = `${currentPage} / ${totalPages}`;
+            document.getElementById('previousPageButton').disabled = currentPage <= 1 || total === 0;
+            document.getElementById('nextPageButton').disabled = currentPage >= totalPages || total === 0;
+        }
+
+        function changePage(direction) {
+            const totalPages = Math.ceil(filteredPolicies.length / pageSize);
+            const nextPage = currentPage + direction;
+            if (nextPage < 1 || nextPage > totalPages) return;
+            currentPage = nextPage;
+            renderTable();
         }
 
         function renderStatusControl(policy) {
@@ -811,6 +832,7 @@
 
         // Filter Table
         function filterTable() {
+            currentPage = 1;
             const query = document.getElementById('searchInput').value.toLowerCase();
             const status = document.getElementById('statusFilter').value;
             const product = document.getElementById('productFilter').value;
